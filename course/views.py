@@ -25,8 +25,9 @@ class CourseDetailView(LoginRequiredMixin, generic.DetailView):
         course = kwargs['object']
         if user.role == 0:
             try:
-                trainee_course_subject = get_object_or_404(TraineeCourseSubject, trainee=user, course_subject__course=course,
-                                                                      is_active=True)
+                trainee_course_subject = get_object_or_404(TraineeCourseSubject, trainee=user,
+                                                           course_subject__course=course,
+                                                           is_active=True)
             except:
                 trainee_course_subject = None
             if trainee_course_subject is not None:
@@ -204,6 +205,30 @@ class CourseListView(LoginRequiredMixin, generic.ListView):
     context_object_name = 'courses'
     template_name = 'course/course_list.html'
 
+    def get_queryset(self):
+        user = self.request.user
+        course = set()
+        if user.role == 0:
+            trainee_course_subject_list = TraineeCourseSubject.objects.filter(trainee=user)
+            course_subject_list = set()
+            for trainee_course_subject in trainee_course_subject_list:
+                course_subject_list.add(trainee_course_subject.course_subject)
+            for course_subject in course_subject_list:
+                course.add(course_subject.course)
+            return course
+        elif user.role == 1:
+            supervisor_list = Supervisor.objects.filter(trainer=user)
+            for supervisor in supervisor_list:
+                course.add(supervisor.course)
+            subject_list = Subject.objects.filter(trainer=user)
+            for subject in subject_list:
+                course_subject_list = CourseSubject.objects.filter(subject=subject)
+                for course_subject in course_subject_list:
+                    course.add(course_subject.course)
+        elif user.role == 2:
+            course = Course.objects.all()
+        return course
+
 
 class CourseDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = Course
@@ -240,6 +265,27 @@ class CourseSubjectListView(LoginRequiredMixin, generic.ListView):
     context_object_name = 'course_subjects'
     template_name = 'course/coursesubject_list.html'
 
+    def get_queryset(self):
+        user = self.request.user
+        course_subject_list = set()
+        if user.role == 1:
+            supervisor_list = Supervisor.objects.filter(trainer=user)
+            course_list = set()
+            for supervisor in supervisor_list:
+                course_list.add(supervisor.course)
+            for course in course_list:
+                course_subject_list_1 = CourseSubject.objects.filter(course=course)
+                for course_subject in course_subject_list_1:
+                    course_subject_list.add(course_subject)
+            subject_list = Subject.objects.filter(trainer=user)
+            for subject in subject_list:
+                course_subject_list_2 = CourseSubject.objects.filter(subject=subject)
+                for course_subject in course_subject_list_2:
+                    course_subject_list.add(course_subject)
+        elif user.role == 2:
+            course_subject_list = CourseSubject.objects.all()
+        return course_subject_list
+
 
 class CourseSubjectDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = CourseSubject
@@ -268,10 +314,10 @@ class IndexView(LoginRequiredMixin, generic.ListView):
         result = ""
         for tr in trainee:
             result += tr.username
-        print(result)
+        # print(result)
         # context['trainee'] = trainee
         context['username'] = result
-        print(context['username'])
+        # print(context['username'])
         return context
 
 

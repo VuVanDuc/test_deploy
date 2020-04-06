@@ -36,8 +36,7 @@ class TaskListView(LoginRequiredMixin, generic.ListView):
                                         'INNER JOIN user_user ON task_traineetask.trainee_id = user_user.id ' +
                                         'WHERE course_traineecoursesubject.trainee_id = user_user.id ' +
                                         'AND user_user.is_active = %s ' +
-                                        'AND course_traineecoursesubject.is_active = %s ' +
-                                        'AND user_user.id = %s', params=[True, True, user_id])
+                                        'AND user_user.id = %s', params=[True, user_id])
         else:
             queryset = Task.objects.filter(creator=self.request.user)
         # for task in queryset:
